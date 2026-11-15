@@ -5,7 +5,7 @@
 //  tetap bisa dipakai, tapi data hanya tersimpan di perangkat ini.
 // ============================================================
 
-export const CONFIG = null;
+// export const CONFIG = null; TURN OFF
 
 // Contoh bentuknya (ganti dengan milik Anda):
 // export const CONFIG = {
