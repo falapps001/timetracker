@@ -1,27 +1,8 @@
 // ============================================================
 //  KONFIGURASI FIREBASE
-//  Tempel konfigurasi dari Firebase Console di bawah ini
-//  (lihat PANDUAN.md, langkah 3). Selama masih null, aplikasi
-//  tetap bisa dipakai, tapi data hanya tersimpan di perangkat ini.
 // ============================================================
 
-// export const CONFIG = null; TURN OFF
-
-// Contoh bentuknya (ganti dengan milik Anda):
-// export const CONFIG = {
-//   apiKey: "AIzaSyB_7DNlQBHN6mxDjEdpJMTylL0TgQe9VV4",
-//   authDomain: "timetracker-63e72.firebaseapp.com",
-//   projectId: "timetracker-63e72",
-//   appId: "1:1058502481588:web:39991fce441d35399329e1"
-// };
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
+export const CONFIG = {
   apiKey: "AIzaSyB_7DNlQBHN6mxDjEdpJMTylL0TgQe9VV4",
   authDomain: "timetracker-63e72.firebaseapp.com",
   projectId: "timetracker-63e72",
@@ -29,9 +10,6 @@ const firebaseConfig = {
   messagingSenderId: "1058502481588",
   appId: "1:1058502481588:web:39991fce441d35399329e1"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
 // Versi library Firebase (dikunci supaya tidak berubah sendiri).
 export const SDK = '12.19.0';
