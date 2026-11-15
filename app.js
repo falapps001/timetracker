@@ -327,7 +327,32 @@ function render(){
   if(focus&&document.getElementById(focus)?.matches('input'))document.getElementById(focus).focus();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===U.view));
   updateTitle();
+  if(U.view==='timer')fitTiles();
 }
+// HP: atur tinggi ubin supaya semua ubin muat satu layar tanpa scroll,
+// lalu kecilkan huruf nama yang tidak muat (kata tidak pernah dipotong di tengah).
+function fitTiles(){
+  const g=document.querySelector('.grid');if(!g)return;
+  const tiles=[...g.children];
+  if(innerWidth>=768){g.style.removeProperty('--tile-h');g.style.removeProperty('--emo');tiles.forEach(t=>{const n=t.querySelector('.nm');if(n)n.style.fontSize=''});return}
+  const cols=4,rows=Math.ceil(tiles.length/cols),gap=8;
+  const top=g.getBoundingClientRect().top+scrollY,nav=document.getElementById('nav').offsetHeight;
+  const avail=innerHeight-top-nav-12;
+  const h=Math.max(64,Math.min(120,Math.floor((avail-gap*(rows-1))/rows)));
+  g.style.setProperty('--tile-h',h+'px');
+  g.style.setProperty('--emo',Math.round(Math.max(18,Math.min(28,h*.3)))+'px');
+  for(const t of tiles){
+    const n=t.querySelector('.nm');if(!n)continue;
+    let size=12.5;n.style.fontSize=size+'px';
+    const over=()=>n.scrollWidth>n.clientWidth+.5||n.scrollHeight>n.clientHeight+.5||t.scrollHeight>t.clientHeight+.5;
+    while(size>8.5&&over()){size-=.5;n.style.fontSize=size+'px'}
+    // HP sangat sempit (mis. iPhone SE lama): kalau tetap tidak muat, baru boleh dipotong
+    n.style.overflowWrap=n.scrollWidth>n.clientWidth+.5?'anywhere':'';
+  }
+}
+let fitT;addEventListener('resize',()=>{clearTimeout(fitT);fitT=setTimeout(()=>{if(U.view==='timer')fitTiles()},120)});
+document.fonts?.ready?.then(()=>{if(U.view==='timer')fitTiles()});
+
 // judul tab & tanda di ikon aplikasi saat ada timer berjalan
 let lastBadge=null;
 function updateTitle(){

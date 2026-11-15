@@ -1,6 +1,6 @@
 // Service worker: aplikasi tetap terbuka tanpa internet.
 // Ganti angka versi setiap kali file aplikasi diperbarui.
-const V = 'waktu-1.1.0';
+const V = 'waktu-1.1.1';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'data.js', 'firebase-config.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png'];
 const CDN = ['www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
