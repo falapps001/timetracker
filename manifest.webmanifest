@@ -1,8 +1,8 @@
 {
   "name": "Waktu",
   "short_name": "Waktu",
-  "description": "Pencatat waktu pribadi: sekali ketuk untuk mulai.",
-  "lang": "id",
+  "description": "Personal time tracker: one tap to start.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

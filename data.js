@@ -13,11 +13,49 @@
 import { CONFIG, SDK, EMULATOR } from './firebase-config.js';
 
 export const DEFAULT_ACTS = [
-  ['kerja', 'Kerja', '💼', '#4F7CE8'], ['belajar', 'Belajar', '📚', '#2E9E6E'],
-  ['olahraga', 'Olahraga', '🏃', '#D9822B'], ['makan', 'Makan', '🍽️', '#D9534F'],
-  ['perjalanan', 'Perjalanan', '🚗', '#8B6FD6'], ['rumah', 'Rumah', '🧹', '#2A9DA8'],
-  ['hiburan', 'Hiburan', '🎮', '#C9579A'], ['tidur', 'Tidur', '😴', '#6B7584'],
+  ['kerja', 'Kerja', '💼', '#4F7CE8'],
+  ['self-development', 'Self Development', '🌱', '#2E9E6E'],
+  ['self-management', 'Self Management', '🧭', '#6E8F3A'],
+  ['nihonggo', 'Nihonggo', '⛩️', '#D9534F'],
+  ['sholat', 'Sholat', '🕌', '#1F9D8A'],
+  ['makan', 'Makan', '🍽️', '#D9822B'],
+  ['tidur', 'Tidur', '😴', '#5B5BD6'],
+  ['mandi', 'Mandi', '🚿', '#2B9BC9'],
+  ['get-ready', 'Get Ready', '👔', '#6C8EBF'],
+  ['otw', 'OTW', '🛵', '#607D8B'],
+  ['scroll-gajelas', 'Scroll Gajelas', '📱', '#8B6FD6'],
+  ['ngasoh', 'Ngasoh Merenung Rokokan', '🚬', '#6B7584'],
+  ['bokep', 'Bokep', '🔞', '#9E3B4E'],
+  ['masak', 'Masak Kora2', '🍳', '#C98A1E'],
+  ['home-cleaning', 'Home Cleaning', '🧹', '#A0794F'],
+  ['umbah', 'Umbah2 Mepe', '🧺', '#7C6FB0'],
+  ['blonjo', 'Blonjo', '🛒', '#C96B2E'],
+  ['sosial', 'Sosial', '👥', '#B8860B'],
+  ['family', 'Family', '👨‍👩‍👧', '#C9579A'],
+  ['baca-buku', 'Baca Buku', '📖', '#3F8F4D'],
+  ['internet', 'Internet', '🌐', '#2A9DA8'],
+  ['research', 'Research', '🔬', '#3F6FB5'],
+  ['piano', 'Piano', '🎹', '#7A4FC9'],
+  ['skincare', 'Skincare', '🧴', '#E07BA6'],
+  ['file-management', 'File Management', '📁', '#56789F'],
+  ['love', 'Love', '❤️', '#E5484D'],
 ].map(([id, name, icon, color], order) => ({ id, name, icon, color, order, hidden: false, u: 0 }));
+const DEFAULTS_V = 2;
+const OLD_DEFAULTS = ['belajar', 'olahraga', 'perjalanan', 'rumah', 'hiburan']; // daftar bawaan versi 1.0
+
+// Ganti daftar bawaan lama dengan yang baru. Aktivitas yang sudah Anda ubah sendiri tidak disentuh.
+function migrateDefaults() {
+  const used = new Set(S.entries.map(x => x.a));
+  const untouched = a => !(a.u > 0);
+  S.acts = S.acts.filter(a => !(OLD_DEFAULTS.includes(a.id) && untouched(a) && !used.has(a.id)));
+  S.acts.forEach(a => { if (OLD_DEFAULTS.includes(a.id) && untouched(a)) a.hidden = true; });
+  for (const d of DEFAULT_ACTS) {
+    const ex = S.acts.find(a => a.id === d.id);
+    if (!ex) S.acts.push({ ...d }); else if (untouched(ex)) Object.assign(ex, { ...d });
+  }
+  const rank = a => { const i = DEFAULT_ACTS.findIndex(d => d.id === a.id); return i >= 0 ? i : 100 + (a.order ?? 0); };
+  S.acts.sort((p, q) => rank(p) - rank(q));
+}
 
 export const S = { acts: [], entries: [], tombs: {} };
 export const sync = {
@@ -243,7 +281,7 @@ function listenDays() {
 function stopListeners() { unsubDays?.(); unsubActs?.(); unsubDays = unsubActs = null; }
 function onSyncError(err) {
   console.warn(err);
-  setStatus(navigator.onLine ? 'error' : 'offline', err.code === 'permission-denied' ? 'Akses ditolak. Periksa aturan keamanan Firestore.' : err.message);
+  setStatus(navigator.onLine ? 'error' : 'offline', err.code === 'permission-denied' ? 'Access denied. Check the Firestore security rules.' : err.message);
 }
 
 function markSynced() {
@@ -307,13 +345,13 @@ export function flush() {
 
 /* ---------------- tombol sinkron ---------------- */
 export async function syncNow() {
-  if (!sync.user) throw new Error('Masuk dulu di Pengaturan supaya data bisa disinkronkan.');
-  if (!navigator.onLine) throw new Error('Tidak ada internet. Data tersimpan di perangkat dan dikirim otomatis nanti.');
-  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Server tidak merespons. Coba lagi nanti.')), 20e3));
+  if (!sync.user) throw new Error('Sign in from Settings to sync your data.');
+  if (!navigator.onLine) throw new Error('No internet. Your data is saved on this device and will upload automatically later.');
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('The server is not responding. Try again later.')), 20e3));
   setStatus('syncing');
   try {
     await Promise.race([(async () => {
-      const ok = await flush(); if (ok === false) throw new Error(sync.error || 'Gagal mengirim data.');
+      const ok = await flush(); if (ok === false) throw new Error(sync.error || 'Failed to upload data.');
       listenDays();                       // ambil ulang perubahan terbaru dari server
       await firstServer;
     })(), timeout]);
@@ -323,12 +361,12 @@ export async function syncNow() {
 
 /* ---------------- akun ---------------- */
 const authMsg = e => ({
-  'auth/invalid-credential': 'Email atau password salah.', 'auth/wrong-password': 'Email atau password salah.',
-  'auth/user-not-found': 'Akun dengan email ini belum terdaftar.', 'auth/invalid-email': 'Format email tidak valid.',
-  'auth/email-already-in-use': 'Email ini sudah terdaftar. Pilih Masuk.', 'auth/weak-password': 'Password minimal 6 karakter.',
-  'auth/network-request-failed': 'Tidak ada internet.', 'auth/too-many-requests': 'Terlalu banyak percobaan. Tunggu sebentar.',
-  'auth/operation-not-allowed': 'Login email/password belum diaktifkan di Firebase (lihat panduan langkah 4).',
-  'auth/admin-restricted-operation': 'Pendaftaran akun baru dimatikan di Firebase.',
+  'auth/invalid-credential': 'Wrong email or password.', 'auth/wrong-password': 'Wrong email or password.',
+  'auth/user-not-found': 'No account with this email yet.', 'auth/invalid-email': 'Invalid email address.',
+  'auth/email-already-in-use': 'This email is already registered. Use Sign in.', 'auth/weak-password': 'Password must be at least 6 characters.',
+  'auth/network-request-failed': 'No internet.', 'auth/too-many-requests': 'Too many attempts. Please wait a moment.',
+  'auth/operation-not-allowed': 'Email/password sign-in is not enabled in Firebase (see guide step 4).',
+  'auth/admin-restricted-operation': 'New sign-ups are disabled in Firebase.',
 }[e.code] || e.message);
 export async function signIn(email, pw) { try { await fb.A.signInWithEmailAndPassword(fb.auth, email, pw); } catch (e) { throw new Error(authMsg(e)); } }
 export async function signUp(email, pw) { try { await fb.A.createUserWithEmailAndPassword(fb.auth, email, pw); } catch (e) { throw new Error(authMsg(e)); } }
@@ -370,7 +408,7 @@ export function deviceName() {
   const u = navigator.userAgent;
   const ipad = /iPad/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1);
   const os = /iPhone/.test(u) ? 'iPhone' : ipad ? 'iPad' : /Android/.test(u) ? 'Android' : /Windows/.test(u) ? 'Windows'
-    : /Mac/.test(u) ? 'Mac' : /CrOS/.test(u) ? 'Chromebook' : /Linux/.test(u) ? 'Linux' : 'Perangkat';
+    : /Mac/.test(u) ? 'Mac' : /CrOS/.test(u) ? 'Chromebook' : /Linux/.test(u) ? 'Linux' : 'Device';
   const br = /Edg\//.test(u) ? 'Edge' : /Firefox\//.test(u) ? 'Firefox' : /Chrome\//.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : '';
   return /iPhone|iPad|Android/.test(os) ? os : (br ? `${br} di ${os}` : os);
 }
@@ -390,7 +428,7 @@ function startFirebase() {
       fb.A.onAuthStateChanged(fb.auth, u => { onUser(u).catch(onSyncError); });
     } catch (e) {
       console.warn(e); fb = null;
-      setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Gagal memuat Firebase. Periksa internet atau firebase-config.js.' : 'Offline · dikirim otomatis saat online');
+      setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Could not load Firebase. Check your internet or firebase-config.js.' : 'Offline · will send automatically when online');
     } finally { starting = null; }
   })();
   return starting;
@@ -402,12 +440,17 @@ export async function init() {
   const [acts, tombs, cur, dev, last] = await Promise.all(['acts', 'tombs', 'cursor', 'deviceId', 'lastSync'].map(kvGet));
   S.acts = acts?.length ? acts : DEFAULT_ACTS.map(a => ({ ...a }));
   S.acts.sort((p, q) => (p.order ?? 99) - (q.order ?? 99));
+  const defaultsV = await kvGet('defaultsV');
   S.tombs = tombs || {};
   cursor = cur > 1e15 ? cur : 0; // mikrodetik
   sync.lastSync = last || 0;
   sync.deviceId = dev || (uid() + rand());
   if (!dev) await kvSet('deviceId', sync.deviceId);
   S.entries = idb ? await P(idb.transaction('entries').objectStore('entries').getAll()) : [];
+  if ((defaultsV || 1) < DEFAULTS_V) {
+    if (acts?.length) migrateDefaults();
+    await kvSet('acts', S.acts.map(a => ({ ...a }))); await kvSet('defaultsV', DEFAULTS_V);
+  }
   if (idb) sync.pending = await P(idb.transaction('outbox').objectStore('outbox').count());
   snapshotPrev();
   sync.ready = true;

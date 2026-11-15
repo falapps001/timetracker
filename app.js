@@ -2,8 +2,9 @@
 import * as Data from './data.js';
 const { S, sync } = Data;
 const KEY='waktu', DAY=864e5;
-const COLORS=['#4F7CE8','#2E9E6E','#D9822B','#D9534F','#8B6FD6','#2A9DA8','#C9579A','#6B7584'];
-const EMO=['💼','📚','🏃','🍽️','🚗','🧹','🎮','😴','📱','📺','🛒','🙏','💻','✍️','🎵','🧘','☕','🚿','👨‍👩‍👧','🛠️','📞','🌳','🎨','⭐'];
+const COLORS=['#4F7CE8','#3F6FB5','#56789F','#2B9BC9','#2A9DA8','#1F9D8A','#2E9E6E','#3F8F4D','#6E8F3A','#B8860B','#C98A1E','#D9822B','#C96B2E','#A0794F','#D9534F','#E5484D','#9E3B4E','#C9579A','#E07BA6','#8B6FD6','#7A4FC9','#7C6FB0','#5B5BD6','#6C8EBF','#607D8B','#6B7584'];
+const EMO=['💼','🌱','🧭','⛩️','🕌','🍽️','😴','🚿','👔','🛵','📱','🚬','🔞','🍳','🧹','🧺','🛒','👥','👨‍👩‍👧','📖','🌐','🔬','🎹','🧴','📁','❤️',
+  '📚','✍️','💻','🧠','🏃','🏋️','⚽','🚗','🚌','☕','🎮','📺','🎵','🎨','📞','🧘','💊','🩺','🙏','🌳','🐱','💰','🛠️','✈️','🎬','🍿','💤','⭐'];
 
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
@@ -14,8 +15,9 @@ const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes()
 const dur=(ms,sec)=>{ms=Math.max(0,ms);const s=Math.floor(ms/1e3),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return sec?`${h}:${pad(m)}:${pad(s%60)}`:`${h}:${pad(m)}`};
 const ov=(x,a,b)=>Math.max(0,Math.min(x.e??Date.now(),b)-Math.max(x.s,a));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmtDay=t=>new Date(t).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
-const fmtShort=t=>new Date(t).toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+const fmtDay=t=>new Date(t).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+const plural=(n,one,many)=>`${n} ${n===1?one:many}`;
+const fmtShort=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 
 /* ---------- data (lihat data.js) ---------- */
 const U={hmode:(()=>{try{return localStorage.getItem(KEY+'-mode')||'day'}catch{return 'day'}})(),view:'timer',day:sod(Date.now()),period:'week',anchor:Date.now()};
@@ -40,7 +42,7 @@ function tap(aid){
   commit();
   navigator.vibrate?.(12);
   const a=act(aid);
-  const msg=same?(dropped.length?`${a.icon} ${a.name} dibatalkan (< 1 menit)`:`${a.icon} ${a.name} berhenti`):`${a.icon} ${a.name} mulai`;
+  const msg=same?(dropped.length?`${a.icon} ${a.name} discarded (< 1 min)`:`${a.icon} ${a.name} stopped`):`${a.icon} ${a.name} started`;
   toast(msg,()=>{
     if(created)S.entries=S.entries.filter(x=>x!==created);
     dropped.forEach(x=>{x.e=null;S.entries.push(x)});
@@ -63,10 +65,10 @@ function vTimer(){
   const rf=run?Math.max(run.s,t0):0;
   return `<div class="split"><div class="main-col"><header class="hd"><div><div class="lbl">${fmtDay(now)}</div>
       <div class="cap">${run?`${act(run.a).icon} ${esc(act(run.a).name)} · <span class="num" data-base="0" data-from="${run.s}" data-sec="1">${dur(now-run.s,1)}</span>`:'&nbsp;'}</div></div>
-      <button class="syncb${sync.status==='syncing'?' spin':''}${sync.status==='error'||sync.status==='offline'?' warn':''}" data-do="syncnow" aria-label="Sinkronkan sekarang" title="${esc(syncLabel())}">
+      <button class="syncb${sync.status==='syncing'?' spin':''}${sync.status==='error'||sync.status==='offline'?' warn':''}" data-do="syncnow" aria-label="Sync now" title="${esc(syncLabel())}">
         <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></svg></button></header>
-    <section class="grid">${tiles}<button class="tile add" data-do="newAct"><b>+</b>Aktivitas</button></section></div>
-    <aside class="tpanel"><div class="today-h"><b>Hari ini</b><button class="linkb" data-goto="${t0}">Buka di Riwayat ›</button></div>
+    <section class="grid">${tiles}<button class="tile add" data-do="newAct"><b>+</b>Activity</button></section></div>
+    <aside class="tpanel"><div class="today-h"><b>Today</b><button class="linkb" data-goto="${t0}">Open in History ›</button></div>
       <div class="today-s" id="todayScroll"><div class="dv" style="--h:${H}px;grid-template-columns:46px minmax(0,1fr)">
       <div class="hours num">${Array.from({length:23},(_,i)=>`<span style="top:${(i+1)*H}px">${pad(i+1)}:00</span>`).join('')}</div>${laneHtml(t0,false)}</div></div></aside></div>`;
 }
@@ -82,7 +84,7 @@ function laneHtml(d0,wk){
   es.forEach(x=>{const o={x,s0:Math.max(x.s,d0),e0:Math.min(x.e??now,d1)};if(cl.length&&o.s0>=cEnd)flush();cl.push(o);cEnd=Math.max(cEnd,o.e0);L.push(o)});flush();
   const evs=L.map(o=>{
     const a=act(o.x.a),top=px(o.s0),h=Math.max(wk?6:16,px(o.e0)-top-2),w=100/o.n,short=h<36;
-    const time=`${hm(o.x.s)}–${o.x.e==null?'sekarang':hm(o.x.e)}`;
+    const time=`${hm(o.x.s)}–${o.x.e==null?'now':hm(o.x.e)}`;
     const m=wk?2:4;
     return `<button class="ev${short?' short':''}" data-entry="${o.x.id}" title="${esc(a.name)} ${time}"
       style="--c:${a.color};top:${top+1}px;height:${h}px;left:calc(${o.col*w}% + ${m}px);width:calc(${w}% - ${m+2}px)">
@@ -99,12 +101,12 @@ function vHistory(){
   const title=wk?`${fmtShort(s0)} – ${fmtShort(addD(s1,-1))}`:fmtDay(s0);
   const cols=`46px repeat(${days.length},minmax(0,1fr))`;
   const wkhd=wk?`<div class="wkhd" style="grid-template-columns:${cols}"><span></span>${days.map(d=>{const x=new Date(d);
-    return `<button type="button" data-goday="${d}" class="${d===today?'td':''}"><small>${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.getDay()]}</small><b class="num">${x.getDate()}</b></button>`}).join('')}</div>`:'';
+    return `<button type="button" data-goday="${d}" class="${d===today?'td':''}"><small>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.getDay()]}</small><b class="num">${x.getDate()}</b></button>`}).join('')}</div>`:'';
   return `<div class="stick">
-      <div class="seg">${[['day','Harian'],['week','Mingguan']].map(([k,l])=>`<button data-hmode="${k}" class="${(U.hmode||'day')===k?'on':''}">${l}</button>`).join('')}</div>
-      <div class="daynav"><button class="ib" data-day="-1" aria-label="Sebelumnya">‹</button>
-      <button class="dtitle" data-do="cal" aria-label="Pilih tanggal"><b>${title}</b></button>
-      <button class="ib" data-day="1" aria-label="Berikutnya" ${s1>today?'disabled':''}>›</button></div>${wkhd}</div>
+      <div class="seg">${[['day','Daily'],['week','Weekly']].map(([k,l])=>`<button data-hmode="${k}" class="${(U.hmode||'day')===k?'on':''}">${l}</button>`).join('')}</div>
+      <div class="daynav"><button class="ib" data-day="-1" aria-label="Previous">‹</button>
+      <button class="dtitle" data-do="cal" aria-label="Pick a date"><b>${title}</b></button>
+      <button class="ib" data-day="1" aria-label="Next" ${s1>today?'disabled':''}>›</button></div>${wkhd}</div>
     <div class="dv${wk?' wk':''}" style="--h:${H}px;grid-template-columns:${cols}">
       <div class="hours num">${hrs.map(h=>`<span style="top:${h*H}px">${pad(h)}:00</span>`).join('')}</div>
       ${days.map(d=>laneHtml(d,wk)).join('')}</div>`;
@@ -124,11 +126,11 @@ function openCal(cur=U.day,isSel=t=>U.hmode==='week'?weekStart(t)===weekStart(U.
     let cells='';for(let i=0;i<lead;i++)cells+='<span></span>';
     for(let d=1;d<=n;d++){const t=+new Date(y,mo,d);
       cells+=`<button type="button" data-pick="${t}" class="${has.has(t)?'has':''}${t===today?' td':''}${isSel(t)?' sel':''}" ${t>today?'disabled':''}>${d}</button>`}
-    form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-m="-1" aria-label="Bulan sebelumnya">‹</button>
-        <h2>${m.toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</h2>
-        <button type="button" class="ib" data-m="1" aria-label="Bulan berikutnya" ${first+31*DAY>today&&new Date(y,mo+1,1)>today?'disabled':''}>›</button></div>
-      <div class="cal${(cells.match(/ sel/g)||[]).length>1?' wkm':''}">${['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(w=>`<span class="wd">${w}</span>`).join('')}${cells}</div>
-      <div class="btns"><button type="button" class="ghost" data-pick="${today}">Hari ini</button></div>`;
+    form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-m="-1" aria-label="Previous month">‹</button>
+        <h2>${m.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2>
+        <button type="button" class="ib" data-m="1" aria-label="Next month" ${first+31*DAY>today&&new Date(y,mo+1,1)>today?'disabled':''}>›</button></div>
+      <div class="cal${(cells.match(/ sel/g)||[]).length>1?' wkm':''}">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<span class="wd">${w}</span>`).join('')}${cells}</div>
+      <div class="btns"><button type="button" class="ghost" data-pick="${today}">Today</button></div>`;
   };
   sheet('',form=>{draw(form);form.addEventListener('click',e=>{
     const b=e.target.closest('[data-m],[data-pick]');if(!b)return;
@@ -141,11 +143,11 @@ function openMonthPick(){
   const cur=new Date(U.anchor),now=new Date();let y=cur.getFullYear();
   const has=new Set(S.entries.map(x=>{const d=new Date(x.s);return d.getFullYear()*12+d.getMonth()}));
   const draw=form=>{
-    form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-y="-1" aria-label="Tahun sebelumnya">‹</button><h2>${y}</h2>
-        <button type="button" class="ib" data-y="1" aria-label="Tahun berikutnya" ${y>=now.getFullYear()?'disabled':''}>›</button></div>
+    form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-y="-1" aria-label="Previous year">‹</button><h2>${y}</h2>
+        <button type="button" class="ib" data-y="1" aria-label="Next year" ${y>=now.getFullYear()?'disabled':''}>›</button></div>
       <div class="mgrid">${Array.from({length:12},(_,i)=>{const k=y*12+i;
-        return `<button type="button" data-mp="${i}" class="${has.has(k)?'has':''}${y===cur.getFullYear()&&i===cur.getMonth()?' sel':''}${y===now.getFullYear()&&i===now.getMonth()?' td':''}" ${k>now.getFullYear()*12+now.getMonth()?'disabled':''}>${new Date(y,i,1).toLocaleDateString('id-ID',{month:'long'})}</button>`}).join('')}</div>
-      <div class="btns"><button type="button" class="ghost" data-mp="now">Bulan ini</button></div>`;
+        return `<button type="button" data-mp="${i}" class="${has.has(k)?'has':''}${y===cur.getFullYear()&&i===cur.getMonth()?' sel':''}${y===now.getFullYear()&&i===now.getMonth()?' td':''}" ${k>now.getFullYear()*12+now.getMonth()?'disabled':''}>${new Date(y,i,1).toLocaleDateString('en-GB',{month:'long'})}</button>`}).join('')}</div>
+      <div class="btns"><button type="button" class="ghost" data-mp="now">This month</button></div>`;
   };
   sheet('',form=>{draw(form);form.addEventListener('click',e=>{
     const b=e.target.closest('[data-y],[data-mp]');if(!b)return;
@@ -157,7 +159,7 @@ function openYearPick(){
   const cy=new Date().getFullYear(),sel=new Date(U.anchor).getFullYear();
   const first=Math.min(cy,...S.entries.map(x=>new Date(x.s).getFullYear()));
   const years=[];for(let y=cy;y>=first;y--)years.push(y);
-  sheet(`<h2>Pilih tahun</h2><div class="mgrid">${years.map(y=>`<button type="button" data-yp="${y}" class="has${y===sel?' sel':''}${y===cy?' td':''}">${y}</button>`).join('')}</div>`,form=>{
+  sheet(`<h2>Pick a year</h2><div class="mgrid">${years.map(y=>`<button type="button" data-yp="${y}" class="has${y===sel?' sel':''}${y===cy?' td':''}">${y}</button>`).join('')}</div>`,form=>{
     form.addEventListener('click',e=>{const b=e.target.closest('[data-yp]');if(!b)return;U.anchor=+new Date(+b.dataset.yp,0,1);closeSheet();render()});
   });
 }
@@ -167,12 +169,12 @@ function range(){
   if(U.period==='day'){const s=sod(d);return {s,e:addD(s,1),label:fmtDay(s)}}
   if(U.period==='week'){const s=addD(sod(d),-((d.getDay()+6)%7)),e=addD(s,7);return {s,e,label:`${fmtShort(s)} – ${fmtShort(addD(e,-1))}`}}
   if(U.period==='month'){const s=+new Date(d.getFullYear(),d.getMonth(),1),e=+new Date(d.getFullYear(),d.getMonth()+1,1);
-    return {s,e,label:new Date(s).toLocaleDateString('id-ID',{month:'long',year:'numeric'})}}
+    return {s,e,label:new Date(s).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}}
   const s=+new Date(d.getFullYear(),0,1),e=+new Date(d.getFullYear()+1,0,1);return {s,e,label:String(d.getFullYear())};
 }
 function repHead(label,e,now){
-  return `<div class="seg" role="tablist">${[['day','Hari'],['week','Minggu'],['month','Bulan'],['year','Tahun']].map(([k,l])=>`<button data-period="${k}" class="${U.period===k?'on':''}">${l}</button>`).join('')}</div>
-    <div class="daynav"><button class="ib" data-pnav="-1" aria-label="Sebelumnya">‹</button><button class="dtitle" data-do="rpick" aria-label="Pilih periode"><b>${label}</b></button><button class="ib" data-pnav="1" aria-label="Berikutnya" ${e>now?'disabled':''}>›</button></div>`;
+  return `<div class="seg" role="tablist">${[['day','Day'],['week','Week'],['month','Month'],['year','Year']].map(([k,l])=>`<button data-period="${k}" class="${U.period===k?'on':''}">${l}</button>`).join('')}</div>
+    <div class="daynav"><button class="ib" data-pnav="-1" aria-label="Previous">‹</button><button class="dtitle" data-do="rpick" aria-label="Pick a period"><b>${label}</b></button><button class="ib" data-pnav="1" aria-label="Next" ${e>now?'disabled':''}>›</button></div>`;
 }
 function vDetail(){
   const a=act(U.detail),{s,e,label}=range(),now=Date.now();
@@ -189,17 +191,17 @@ function vDetail(){
     const d1=addD(d,1),seg=es.filter(x=>ov(x,d,d1)>0);if(!seg.length)continue;
     const t=seg.reduce((q,x)=>q+ov(x,d,d1),0),dt=new Date(d);
     rows+=`<button class="drow" data-goto="${d}" style="--c:${a.color}">
-      <span class="drh"><span>${dt.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})}</span><b class="num">${dur(t)}</b></span>
+      <span class="drh"><span>${dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</span><b class="num">${dur(t)}</b></span>
       <span class="strip">${seg.map(x=>`<i style="left:${(Math.max(x.s,d)-d)/DAY*100}%;width:${ov(x,d,d1)/DAY*100}%"></i>`).join('')}</span>
-      <small class="num">${seg.map(x=>`${hm(x.s)}–${x.e==null?'sekarang':hm(x.e)}`).join('  ·  ')}</small></button>`;
+      <small class="num">${seg.map(x=>`${hm(x.s)}–${x.e==null?'now':hm(x.e)}`).join('  ·  ')}</small></button>`;
   }
-  return `<button class="back" data-do="back">‹ Semua aktivitas</button>
-    <div class="dhead" style="--c:${a.color}"><span class="dico">${a.icon}</span><div><b>${esc(a.name)}</b><small>${es.length} sesi · ${daysWith} hari</small></div></div>
+  return `<button class="back" data-do="back">‹ All activities</button>
+    <div class="dhead" style="--c:${a.color}"><span class="dico">${a.icon}</span><div><b>${esc(a.name)}</b><small>${es.length} ${es.length===1?'session':'sessions'} · ${plural(daysWith,'day','days')}</small></div></div>
     ${repHead(label,e,now)}
-    <div class="kpis"><div class="kpi"><span>Total</span><b>${dur(total)}</b></div><div class="kpi"><span>Rata-rata / hari</span><b>${dur(nd?total/nd:0)}</b></div>
-      <div class="kpi"><span>Biasanya mulai</span><b>${circ(starts)}</b></div><div class="kpi"><span>Biasanya selesai</span><b>${circ(ends)}</b></div></div>
+    <div class="kpis"><div class="kpi"><span>Total</span><b>${dur(total)}</b></div><div class="kpi"><span>Average / day</span><b>${dur(nd?total/nd:0)}</b></div>
+      <div class="kpi"><span>Usually starts</span><b>${circ(starts)}</b></div><div class="kpi"><span>Usually ends</span><b>${circ(ends)}</b></div></div>
     ${rows?`<div class="tl-ax num"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><div class="dlist">${rows}</div>`
-      :`<div class="empty">Tidak ada ${esc(a.name.toLowerCase())} di periode ini.</div>`}`;
+      :`<div class="empty">No ${esc(a.name)} in this period.</div>`}`;
 }
 function vReport(){
   if(U.detail)return vDetail();
@@ -212,7 +214,7 @@ function vReport(){
   const bk=[];
   if(U.period==='day')for(let h=0;h<24;h++)bk.push([s+h*36e5,s+(h+1)*36e5,h%6===0?pad(h):''])
   else if(U.period==='year')for(let m=0;m<12;m++){const a=+new Date(new Date(s).getFullYear(),m,1),b=+new Date(new Date(s).getFullYear(),m+1,1);bk.push([a,b,'JFMAMJJASOND'[m]])}
-  else for(let t=s,i=0;t<e;t=addD(t,1),i++){const dd=new Date(t);bk.push([t,addD(t,1),U.period==='week'?['Min','Sen','Sel','Rab','Kam','Jum','Sab'][dd.getDay()]:(dd.getDate()%5===1||dd.getDate()===1?dd.getDate():'')])}
+  else for(let t=s,i=0;t<e;t=addD(t,1),i++){const dd=new Date(t);bk.push([t,addD(t,1),U.period==='week'?['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dd.getDay()]:(dd.getDate()%5===1||dd.getDate()===1?dd.getDate():'')])}
   const order=Object.keys(per).sort((p,q)=>per[q]-per[p]);
   const cols=bk.map(([a,b])=>{const m={};let t=0;es.forEach(x=>{const v=ov(x,a,b);if(v){m[x.a]=(m[x.a]||0)+v;t+=v}});return {m,t,a,b}});
   const max=Math.max(...cols.map(c=>c.t),1);
@@ -221,72 +223,72 @@ function vReport(){
   const elapsed=Math.max(0,Math.min(e,now)-s),untracked=Math.max(0,elapsed-total),base=Math.max(elapsed,total,1);
   const top=Math.max(per[order[0]]||0,untracked,1),pct=v=>Math.round(v/base*100);
   const bars=order.map(k=>{const a=act(k);return `<button class="brow" data-detail="${k}" style="--c:${a.color}"><div class="bh"><span>${a.icon} ${esc(a.name)}</span><span class="num">${dur(per[k])}<small>${pct(per[k])}%</small></span></div><div class="bar"><i style="width:${per[k]/top*100}%"></i></div></button>`}).join('')
-    +`<div class="untr"><div class="bh"><span>Tidak tercatat</span><span class="num">${dur(untracked)}<small>${pct(untracked)}%</small></span></div><div class="bar"><i style="width:${untracked/top*100}%"></i></div></div>`;
+    +`<div class="untr"><div class="bh"><span>Untracked</span><span class="num">${dur(untracked)}<small>${pct(untracked)}%</small></span></div><div class="bar"><i style="width:${untracked/top*100}%"></i></div></div>`;
   return `${repHead(label,e,now)}
     ${total?`<div class="chart"><div class="cols">${colHtml}</div><div class="axl">${bk.map(b=>`<span>${b[2]}</span>`).join('')}</div></div><div class="bars">${bars}</div>`
-      :`<div class="empty">Belum ada data di periode ini.</div>`}`;
+      :`<div class="empty">No data in this period yet.</div>`}`;
 }
 
 /* ---------- pengaturan ---------- */
-function ago(t){if(!t)return 'belum pernah';const m=Math.floor((Date.now()-t)/6e4);
-  if(m<1)return 'baru saja';if(m<60)return `${m} menit lalu`;if(m<24*60)return `${Math.floor(m/60)} jam lalu`;
-  if(m<7*24*60)return `${Math.floor(m/1440)} hari lalu`;
-  return `${new Date(t).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}, ${hm(t)}`}
+function ago(t){if(!t)return 'never';const m=Math.floor((Date.now()-t)/6e4);
+  if(m<1)return 'just now';if(m<60)return `${m} min ago`;if(m<24*60)return `${Math.floor(m/60)} h ago`;
+  if(m<7*24*60)return `${Math.floor(m/1440)} days ago`;
+  return `${new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}, ${hm(t)}`}
 function syncLabel(){
-  if(!sync.enabled)return 'Sinkronisasi belum diatur';
-  if(!sync.user)return 'Belum masuk';
-  return {syncing:'Menyinkronkan…',offline:'Offline · dikirim otomatis saat online',error:sync.error||'Gagal sinkron',
-    idle:`Tersinkron ${ago(sync.lastSync)}`}[sync.status]||'';
+  if(!sync.enabled)return 'Sync is not set up';
+  if(!sync.user)return 'Not signed in';
+  return {syncing:'Syncing…',offline:'Offline · will send automatically when online',error:sync.error||'Sync failed',
+    idle:`Synced ${ago(sync.lastSync)}`}[sync.status]||'';
 }
 let devCache=null;
 function devicesHtml(){
   if(!sync.user)return '';
   if(!devCache){devCache='loading';Data.listDevices().then(d=>{devCache=d;if(U.view==='settings')render()}).catch(()=>{devCache=[];});}
   const list=Array.isArray(devCache)?devCache:[];
-  return `<h3 class="sh">Perangkat</h3><div class="card">${list.length?list.map(d=>`<div class="item static"><span class="dev"><span class="dico2">${Data.isMobileName(d.name)?'📱':'💻'}</span><span><b>${esc(d.name)}${d.me?' <em class="tag">perangkat ini</em>':''}</b><small>Sinkron terakhir ${ago(d.last)}</small></span></span></div>`).join('')
-    :`<div class="item static"><span><small>${devCache==='loading'?'Memuat…':'Belum ada data perangkat.'}</small></span></div>`}</div>`;
+  return `<h3 class="sh">Devices</h3><div class="card">${list.length?list.map(d=>`<div class="item static"><span class="dev"><span class="dico2">${Data.isMobileName(d.name)?'📱':'💻'}</span><span><b>${esc(d.name)}${d.me?' <em class="tag">this device</em>':''}</b><small>Last synced ${ago(d.last)}</small></span></span></div>`).join('')
+    :`<div class="item static"><span><small>${devCache==='loading'?'Loading…':'No devices yet.'}</small></span></div>`}</div>`;
 }
 function vSettings(){
   const hidden=S.acts.filter(a=>a.hidden);
   let syncCard;
-  if(!sync.enabled)syncCard=`<div class="card"><div class="item static"><span><b>Belum diatur</b><small>Data hanya tersimpan di perangkat ini. Isi firebase-config.js untuk mengaktifkan sinkron (lihat PANDUAN.md).</small></span></div></div>`;
+  if(!sync.enabled)syncCard=`<div class="card"><div class="item static"><span><b>Not set up</b><small>Data is stored on this device only. Fill in firebase-config.js to enable sync (see PANDUAN.md).</small></span></div></div>`;
   else if(!sync.user)syncCard=`<form class="card login" id="loginForm" novalidate>
-      <div class="item static"><span><b>Masuk untuk sinkron</b><small>Pakai email & password yang sama di semua perangkat</small></span></div>
+      <div class="item static"><span><b>Sign in to sync</b><small>Use the same email & password on every device</small></span></div>
       <div class="lf"><input id="lg-email" type="email" autocomplete="username" placeholder="Email" inputmode="email">
-        <input id="lg-pw" type="password" autocomplete="current-password" placeholder="Password (min. 6 karakter)">
+        <input id="lg-pw" type="password" autocomplete="current-password" placeholder="Password (min. 6 characters)">
         <p class="err" id="lg-err">${esc(U.authErr||'')}</p>
-        <div class="btns"><button type="button" class="ghost" data-do="signup">Daftar</button><button class="pri" data-do="signin">Masuk</button></div>
-        <button type="button" class="linkb" data-do="reset">Lupa password?</button></div></form>`;
-  else syncCard=`<div class="card"><div class="item static"><span><b>${esc(sync.user.email)}</b><small>${esc(syncLabel())}${sync.pending?` · ${sync.pending} perubahan menunggu dikirim`:''}</small></span><button class="btn" data-do="syncnow">Sinkron</button></div>
-      <button class="item" data-do="signout"><span><b class="danger">Keluar</b><small>Data di perangkat ini dihapus; data di server tetap aman</small></span></button></div>`;
+        <div class="btns"><button type="button" class="ghost" data-do="signup">Sign up</button><button class="pri" data-do="signin">Sign in</button></div>
+        <button type="button" class="linkb" data-do="reset">Forgot password?</button></div></form>`;
+  else syncCard=`<div class="card"><div class="item static"><span><b>${esc(sync.user.email)}</b><small>${esc(syncLabel())}${sync.pending?` · ${plural(sync.pending,'change','changes')} waiting to upload`:''}</small></span><button class="btn" data-do="syncnow">Sync</button></div>
+      <button class="item" data-do="signout"><span><b class="danger">Sign out</b><small>Removes data from this device; your data on the server stays safe</small></span></button></div>`;
   const lb=U.lastBackup;
-  return `<h1 class="pt">Pengaturan</h1>
-    <h3 class="sh">Sinkronisasi</h3>${syncCard}
+  return `<h1 class="pt">Settings</h1>
+    <h3 class="sh">Sync</h3>${syncCard}
     ${devicesHtml()}
     <h3 class="sh">Data</h3>
     <div class="card">
-      <button class="item" data-do="csv"><span><b>Ekspor CSV</b><small>${S.entries.length} catatan · buka di Excel atau Google Sheets</small></span><i>›</i></button>
-      <button class="item" data-do="json"><span><b>Backup (JSON)</b><small>${lb?`Backup terakhir ${ago(lb)}`:'Belum pernah backup'}</small></span><i>›</i></button>
-      <label class="item" for="imp"><span><b>Pulihkan dari backup</b><small>Pilih file .json hasil backup</small></span><i>›</i></label>
+      <button class="item" data-do="csv"><span><b>Export CSV</b><small>${plural(S.entries.length,'entry','entries')} · open in Excel or Google Sheets</small></span><i>›</i></button>
+      <button class="item" data-do="json"><span><b>Backup (JSON)</b><small>${lb?`Last backup ${ago(lb)}`:'Never backed up'}</small></span><i>›</i></button>
+      <label class="item" for="imp"><span><b>Restore from backup</b><small>Choose a backup .json file</small></span><i>›</i></label>
       <input type="file" id="imp" accept=".json,application/json" hidden>
     </div>
-    ${(!lb||Date.now()-lb>30*DAY)&&S.entries.length?`<p class="fn warn-t">Sebaiknya backup sebulan sekali dan simpan filenya di Google Drive.</p>`:''}
-    ${hidden.length?`<h3 class="sh">Aktivitas yang dihapus</h3><div class="card">${hidden.map(a=>`<div class="item static"><span><b>${a.icon} ${esc(a.name)}</b></span><button class="btn" data-restore="${a.id}">Pulihkan</button></div>`).join('')}</div>`:''}
-    <p class="fn ver">Waktu · versi 1.0</p>`;
+    ${(!lb||Date.now()-lb>30*DAY)&&S.entries.length?`<p class="fn warn-t">Back up once a month and keep the file in Google Drive.</p>`:''}
+    ${hidden.length?`<h3 class="sh">Deleted activities</h3><div class="card">${hidden.map(a=>`<div class="item static"><span><b>${a.icon} ${esc(a.name)}</b></span><button class="btn" data-restore="${a.id}">Restore</button></div>`).join('')}</div>`:''}
+    <p class="fn ver">Waktu · version 1.1</p>`;
 }
 const fmtDT=t=>{const d=new Date(t);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 function exportText(kind){
-  if(kind==='json')return JSON.stringify({app:'waktu',versi:1,diekspor:new Date().toISOString(),
+  if(kind==='json')return JSON.stringify({app:'waktu',version:1,exported:new Date().toISOString(),
     acts:S.acts.map(({id,name,icon,color,order,hidden})=>({id,name,icon,color,order,hidden:!!hidden})),
     entries:[...S.entries].sort((p,q)=>p.s-q.s).map(({id,a,s,e,n})=>({id,a,s,e:e??null,n:n||''}))});
-  // pemisah titik koma: langsung terbagi ke kolom di Excel berbahasa Indonesia; Google Sheets mendeteksi otomatis
-  const cell=v=>{v=String(v??'');return /[;"\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
-  const rows=[['Tanggal','Aktivitas','Mulai','Selesai','Durasi (menit)','Catatan']];
+  // koma: standar CSV, langsung terbagi ke kolom di Excel berbahasa Inggris & Google Sheets
+  const cell=v=>{v=String(v??'');return /[,"\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const rows=[['Date','Activity','Start','End','Duration (min)','Note']];
   [...S.entries].sort((p,q)=>p.s-q.s).forEach(x=>rows.push([fmtDT(x.s),act(x.a).name,hm(x.s),x.e==null?'':(sod(x.e)!==sod(x.s)?fmtDT(x.e)+' ':'')+hm(x.e),x.e==null?'':Math.round((x.e-x.s)/6e4),x.n]));
-  return '﻿'+rows.map(r=>r.map(cell).join(';')).join('\r\n');
+  return '﻿'+rows.map(r=>r.map(cell).join(',')).join('\r\n');
 }
 async function download(kind){
-  const text=exportText(kind),ext=kind==='json'?'json':'csv',name=`waktu-${kind==='json'?'backup':'catatan'}-${fmtDT(Date.now())}.${ext}`;
+  const text=exportText(kind),ext=kind==='json'?'json':'csv',name=`waktu-${kind==='json'?'backup':'entries'}-${fmtDT(Date.now())}.${ext}`;
   const type=kind==='json'?'application/json':'text/csv';
   const file=new File([text],name,{type});
   // di HP pakai menu Bagikan (bisa langsung simpan ke Files / Google Drive); di laptop unduh biasa
@@ -295,7 +297,7 @@ async function download(kind){
   }
   const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);done();
-  function done(){if(kind==='json'){U.lastBackup=Date.now();Data.setLastBackup(U.lastBackup);render()}toast(kind==='json'?'Backup dibuat':'CSV diekspor')}
+  function done(){if(kind==='json'){U.lastBackup=Date.now();Data.setLastBackup(U.lastBackup);render()}toast(kind==='json'?'Backup created':'CSV exported')}
 }
 async function importFile(file){
   try{
@@ -309,8 +311,8 @@ async function importFile(file){
     const ids=new Map(S.entries.map((x,i)=>[x.id,i]));
     ok.forEach(x=>{const v={id:x.id,a:x.a,s:x.s,e:x.e??null,n:x.n||''};const i=ids.get(x.id);if(i==null)S.entries.push(v);else Object.assign(S.entries[i],v)});
     commit();
-    toast(`${ok.length} catatan dipulihkan`,()=>{S.acts=prev.acts;S.entries=prev.entries;commit()});
-  }catch{toast('File ini bukan backup Waktu yang valid')}
+    toast(`${plural(ok.length,'entry','entries')} restored`,()=>{S.acts=prev.acts;S.entries=prev.entries;commit()});
+  }catch{toast('This file is not a valid Waktu backup')}
 }
 
 function render(){
@@ -348,7 +350,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()})
 let tT;
 function toast(msg,undo){
   const el=$('#toast');
-  el.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button">Batal</button>':''}`;
+  el.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button">Undo</button>':''}`;
   if(undo)el.querySelector('button').onclick=()=>{undo();el.classList.remove('show')};
   el.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>el.classList.remove('show'),3500);
 }
@@ -370,21 +372,21 @@ function picker(form,sel,cb){form.addEventListener('click',e=>{const b=e.target.
 function editAct(aid){
   const a=aid?act(aid):{id:uid(),name:'',icon:'⭐',color:COLORS[S.acts.length%COLORS.length],order:S.acts.length,hidden:false};
   let icon=a.icon,color=a.color;
-  sheet(`<h2>${aid?'Ubah aktivitas':'Aktivitas baru'}</h2>
-    <label class="fld"><span>Nama</span><input id="f-name" maxlength="18" value="${esc(a.name)}" placeholder="mis. Membaca"></label>
-    <div class="fld"><span>Ikon</span><div class="pick">${EMO.map(e=>`<button type="button" class="e${e===icon?' sel':''}" data-emo="${e}">${e}</button>`).join('')}</div></div>
-    <div class="fld"><span>Warna</span><div class="pick">${COLORS.map(c=>`<button type="button" class="c${c===color?' sel':''}" data-col="${c}" style="--c:${c}" aria-label="Warna ${c}"></button>`).join('')}</div></div>
+  sheet(`<h2>${aid?'Edit activity':'New activity'}</h2>
+    <label class="fld"><span>Name</span><input id="f-name" maxlength="30" value="${esc(a.name)}" placeholder="e.g. Reading"></label>
+    <div class="fld"><span>Icon</span><div class="pick">${EMO.map(e=>`<button type="button" class="e${e===icon?' sel':''}" data-emo="${e}">${e}</button>`).join('')}</div></div>
+    <div class="fld"><span>Color</span><div class="pick">${COLORS.map(c=>`<button type="button" class="c${c===color?' sel':''}" data-col="${c}" style="--c:${c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
     <p class="err" id="f-err"></p>
-    <div class="btns">${aid?'<button type="button" class="ghost danger" id="f-del">Hapus</button>':'<button type="button" class="ghost" id="f-x">Batal</button>'}<button class="pri">Simpan</button></div>`,form=>{
+    <div class="btns">${aid?'<button type="button" class="ghost danger" id="f-del">Delete</button>':'<button type="button" class="ghost" id="f-x">Cancel</button>'}<button class="pri">Save</button></div>`,form=>{
     picker(form,'[data-emo]',b=>icon=b.dataset.emo);
     picker(form,'[data-col]',b=>color=b.dataset.col);
     form.querySelector('#f-x')?.addEventListener('click',closeSheet);
     form.querySelector('#f-del')?.addEventListener('click',()=>{
       a.hidden=true;S.entries.forEach(x=>{if(x.a===a.id&&x.e==null)x.e=Date.now()});closeSheet();commit();
-      toast(`${a.name} dihapus`,()=>{a.hidden=false;commit()});
+      toast(`${a.name} deleted`,()=>{a.hidden=false;commit()});
     });
     form.onsubmit=e=>{e.preventDefault();const name=form.querySelector('#f-name').value.trim();
-      if(!name){form.querySelector('#f-err').textContent='Isi nama aktivitas dulu.';return}
+      if(!name){form.querySelector('#f-err').textContent='Enter an activity name.';return}
       Object.assign(a,{name,icon,color});if(!aid)S.acts.push(a);closeSheet();commit()};
   });
 }
@@ -410,41 +412,41 @@ function editEntry(eid,preset){
   const x=eid?S.entries.find(y=>y.id===eid):preset?{a:acts()[0].id,n:'',...preset}:(U.day===sod(now)?{a:acts()[0].id,s:now-30*6e4,e:now,n:''}:{a:acts()[0].id,s:U.day+9*36e5,e:U.day+10*36e5,n:''});
   let aid=x.a;
   const tv=t=>t==null?'':hm(t);
-  sheet(`<h2>${isNew?'Tambah catatan':'Ubah catatan'}</h2>
-    <div class="fld"><span>Aktivitas</span><div class="pick">${acts().map(a=>`<button type="button" class="a${a.id===aid?' sel':''}" data-aid="${a.id}">${a.icon} ${esc(a.name)}</button>`).join('')}</div></div>
-    <div class="two"><label class="fld"><span>Mulai</span><input id="f-s" type="time" value="${tv(x.s)}"></label>
-      <label class="fld"><span>Selesai${x.e==null&&!isNew?' (kosong = masih jalan)':''}</span><input id="f-e" type="time" value="${tv(x.e)}"></label></div>
-    <label class="fld"><span>Catatan (opsional)</span><input id="f-n" maxlength="80" value="${esc(x.n)}" placeholder="mis. Rapat proyek"></label>
+  sheet(`<h2>${isNew?'Add entry':'Edit entry'}</h2>
+    <div class="fld"><span>Activity</span><div class="pick">${acts().map(a=>`<button type="button" class="a${a.id===aid?' sel':''}" data-aid="${a.id}">${a.icon} ${esc(a.name)}</button>`).join('')}</div></div>
+    <div class="two"><label class="fld"><span>Start</span><input id="f-s" type="time" value="${tv(x.s)}"></label>
+      <label class="fld"><span>End${x.e==null&&!isNew?' (empty = still running)':''}</span><input id="f-e" type="time" value="${tv(x.e)}"></label></div>
+    <label class="fld"><span>Note (optional)</span><input id="f-n" maxlength="80" value="${esc(x.n)}" placeholder="e.g. Project meeting"></label>
     <p class="err" id="f-err"></p>
-    <div class="btns">${isNew?'<button type="button" class="ghost" id="f-x">Batal</button>':'<button type="button" class="ghost danger" id="f-del">Hapus</button>'}<button class="pri">Simpan</button></div>`,form=>{
+    <div class="btns">${isNew?'<button type="button" class="ghost" id="f-x">Cancel</button>':'<button type="button" class="ghost danger" id="f-del">Delete</button>'}<button class="pri">Save</button></div>`,form=>{
     picker(form,'[data-aid]',b=>aid=b.dataset.aid);
     form.querySelector('#f-x')?.addEventListener('click',closeSheet);
     form.querySelector('#f-del')?.addEventListener('click',()=>{
       const i=S.entries.indexOf(x);S.entries.splice(i,1);closeSheet();commit();
-      toast('Catatan dihapus',()=>{S.entries.splice(i,0,x);commit()});
+      toast('Entry deleted',()=>{S.entries.splice(i,0,x);commit()});
     });
     form.onsubmit=e=>{e.preventDefault();
       const err=m=>form.querySelector('#f-err').textContent=m;
       const sv=form.querySelector('#f-s').value,ev=form.querySelector('#f-e').value;
-      if(!sv)return err('Isi jam mulai.');
+      if(!sv)return err('Enter a start time.');
       const base=sod(x.s??U.day),at=v=>{const [h,m]=v.split(':').map(Number);return base+(h*60+m)*6e4};
       let s=sv===tv(x.s)?x.s:at(sv), en=null;
       if(ev){
-        if(ev===sv)return err('Jam selesai harus berbeda dari jam mulai.');
+        if(ev===sv)return err('End time must be different from start time.');
         en=ev===tv(x.e)?x.e:at(ev);
         if(en<=s){en=addD(en,1); // lewat tengah malam, mis. tidur 22:30–06:00
-          if(en-s>16*36e5)return err('Jam selesai lebih awal dari jam mulai. Periksa lagi jamnya.')}
+          if(en-s>16*36e5)return err('End time is earlier than start time. Please check the times.')}
       }
-      else if(isNew||x.e!=null)return err('Isi jam selesai.');
-      if(en!=null&&en>Date.now())return err('Jam selesai belum terjadi.');
-      if(en==null&&s>Date.now())return err('Jam mulai belum terjadi.');
+      else if(isNew||x.e!=null)return err('Enter an end time.');
+      if(en!=null&&en>Date.now())return err('End time is in the future.');
+      if(en==null&&s>Date.now())return err('Start time is in the future.');
       const snap=S.entries.map(y=>({...y}));
       Object.assign(x,{a:aid,s,e:en,n:form.querySelector('#f-n').value.trim()});
       if(isNew){x.id=uid();S.entries.push(x)}
       const fixed=resolveOverlaps(x);
       closeSheet();commit();
-      if(fixed)toast(`${fixed} catatan lain disesuaikan`,()=>{S.entries=snap;commit()});
-      else toast(isNew?'Catatan ditambahkan':'Tersimpan');
+      if(fixed)toast(`${fixed} other ${fixed>1?'entries':'entry'} adjusted`,()=>{S.entries=snap;commit()});
+      else toast(isNew?'Entry added':'Saved');
     };
   });
 }
@@ -493,17 +495,17 @@ app.addEventListener('click',e=>{
   if(d.act){if(e.detail===0)tap(d.act);return}           // keyboard Enter/Space
   if(d.do==='newAct')return editAct(null);
   if(d.do==='syncnow'){
-    if(!sync.enabled||!sync.user){U.view='settings';render();return toast(sync.enabled?'Masuk dulu untuk sinkron':'Sinkronisasi belum diatur')}
+    if(!sync.enabled||!sync.user){U.view='settings';render();return toast(sync.enabled?'Sign in first to sync':'Sync is not set up')}
     if(sync.status==='syncing'&&U.syncBusy)return;
     U.syncBusy=true;el.classList.add('spin');
-    Data.syncNow().then(()=>{devCache=null;toast(`Tersinkron · ${hm(Date.now())}`)}).catch(err=>toast(err.message)).finally(()=>{U.syncBusy=false;render()});
+    Data.syncNow().then(()=>{devCache=null;toast(`Synced · ${hm(Date.now())}`)}).catch(err=>toast(err.message)).finally(()=>{U.syncBusy=false;render()});
     return;
   }
   if(d.do==='csv')return download('csv');
   if(d.do==='json')return download('json');
   if(d.do==='signin'||d.do==='signup'||d.do==='reset'){e.preventDefault();return auth(d.do,el)}
   if(d.do==='signout')return confirmSignOut();
-  if(d.restore){act(d.restore).hidden=false;commit();return toast('Aktivitas dipulihkan')}
+  if(d.restore){act(d.restore).hidden=false;commit();return toast('Activity restored')}
   if(d.do==='cal')return openCal();
   if(d.do==='rpick'){
     if(U.period==='day')return openCal(U.anchor,t=>t===sod(U.anchor),t=>{U.anchor=t;render()});
@@ -514,9 +516,9 @@ app.addEventListener('click',e=>{
   if(d.detail){U.detail=d.detail;render();return scrollTo(0,0)}
   if(d.goto){U.view='history';U.hmode='day';U.day=+d.goto;render();return scrollDay()}
   if(d.lane!==undefined){
-    if(!acts().length)return toast('Tambahkan aktivitas dulu di halaman Timer');
+    if(!acts().length)return toast('Add an activity first on the Timer page');
     const mins=Math.floor((e.clientY-el.getBoundingClientRect().top)/H*60/15)*15,s=+d.lane+mins*6e4,now=Date.now();
-    if(s>=now)return toast('Jam itu belum terjadi');
+    if(s>=now)return toast('That time is in the future');
     return editEntry(null,{s,e:Math.min(s+36e5,now)});
   }
   if(d.day){U.day=addD(U.day,(U.hmode==='week'?7:1)*d.day);if(U.day>sod(Date.now()))U.day=sod(Date.now());render();return scrollDay()}
@@ -534,22 +536,23 @@ $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!
 
 /* ---------- akun ---------- */
 async function auth(kind,btn){
-  const email=$('#lg-email')?.value.trim(),pw=$('#lg-pw')?.value||'';
+  // normalize('NFKC'): ubah karakter lebar (mis. ＠ dari keyboard Jepang/Cina) menjadi karakter biasa
+  const email=($('#lg-email')?.value||'').normalize('NFKC').replace(/\s+/g,'').toLowerCase(),pw=$('#lg-pw')?.value||'';
   const setErr=m=>{U.authErr=m;const el=$('#lg-err');if(el)el.textContent=m};
-  if(!email)return setErr('Isi email dulu.');
-  if(kind!=='reset'&&pw.length<6)return setErr('Password minimal 6 karakter.');
+  if(!email)return setErr('Enter your email.');
+  if(kind!=='reset'&&pw.length<6)return setErr('Password must be at least 6 characters.');
   setErr('');btn.disabled=true;
   try{
     if(kind==='signin')await Data.signIn(email,pw);
     else if(kind==='signup')await Data.signUp(email,pw);
-    else{await Data.resetPassword(email);toast('Link reset password dikirim ke email Anda')}
-    if(kind!=='reset'){U.authErr='';toast('Berhasil masuk. Menyinkronkan…')}
+    else{await Data.resetPassword(email);toast('Password reset link sent to your email')}
+    if(kind!=='reset'){U.authErr='';toast('Signed in. Syncing…')}
   }catch(err){setErr(err.message)}finally{btn.disabled=false}
 }
 function confirmSignOut(){
-  const warn=sync.pending?`<p class="err">Ada ${sync.pending} perubahan yang belum terkirim ke server dan akan hilang. Sinkronkan dulu bila bisa.</p>`:'';
-  sheet(`<h2>Keluar dari akun?</h2><p class="fn" style="margin:0">Data di perangkat ini akan dihapus. Data di server tetap aman dan kembali saat Anda masuk lagi.</p>${warn}
-    <div class="btns"><button type="button" class="ghost" id="f-x">Batal</button><button type="button" class="pri danger-bg" id="f-ok">Keluar</button></div>`,form=>{
+  const warn=sync.pending?`<p class="err">${sync.pending} changes have not been uploaded yet and will be lost. Sync first if you can.</p>`:'';
+  sheet(`<h2>Sign out?</h2><p class="fn" style="margin:0">Data on this device will be removed. Your data on the server stays safe and comes back when you sign in again.</p>${warn}
+    <div class="btns"><button type="button" class="ghost" id="f-x">Cancel</button><button type="button" class="pri danger-bg" id="f-ok">Sign out</button></div>`,form=>{
     form.querySelector('#f-x').onclick=closeSheet;
     form.querySelector('#f-ok').onclick=async()=>{form.querySelector('#f-ok').disabled=true;await Data.signOut()};
   });
