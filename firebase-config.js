@@ -15,6 +15,24 @@ export const CONFIG = null;
 //   appId: "1:1058502481588:web:39991fce441d35399329e1"
 // };
 
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB_7DNlQBHN6mxDjEdpJMTylL0TgQe9VV4",
+  authDomain: "timetracker-63e72.firebaseapp.com",
+  projectId: "timetracker-63e72",
+  storageBucket: "timetracker-63e72.firebasestorage.app",
+  messagingSenderId: "1058502481588",
+  appId: "1:1058502481588:web:39991fce441d35399329e1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
 // Versi library Firebase (dikunci supaya tidak berubah sendiri).
 export const SDK = '12.19.0';
 
