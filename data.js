@@ -404,13 +404,24 @@ export async function listDevices() {
     .sort((p, q) => q.last - p.last);
 }
 
+export async function removeDevice(id) {
+  if (!sync.user) return;
+  sync.stats.writes++;
+  await fb.fs.deleteDoc(ref('devices', id));
+}
+export async function restoreDevice(d) {
+  if (!sync.user) return;
+  sync.stats.writes++;
+  await fb.fs.setDoc(ref('devices', d.id), { name: d.name, last: fb.fs.Timestamp.fromMillis(d.last || Date.now()) });
+}
+
 export function deviceName() {
   const u = navigator.userAgent;
   const ipad = /iPad/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1);
   const os = /iPhone/.test(u) ? 'iPhone' : ipad ? 'iPad' : /Android/.test(u) ? 'Android' : /Windows/.test(u) ? 'Windows'
     : /Mac/.test(u) ? 'Mac' : /CrOS/.test(u) ? 'Chromebook' : /Linux/.test(u) ? 'Linux' : 'Device';
   const br = /Edg\//.test(u) ? 'Edge' : /Firefox\//.test(u) ? 'Firefox' : /Chrome\//.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : '';
-  return /iPhone|iPad|Android/.test(os) ? os : (br ? `${br} di ${os}` : os);
+  return /iPhone|iPad|Android/.test(os) ? os : (br ? `${br} on ${os}` : os);
 }
 export const isMobileName = n => /iPhone|iPad|Android/.test(n);
 

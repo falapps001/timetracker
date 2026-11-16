@@ -65,8 +65,9 @@ function vTimer(){
   const rf=run?Math.max(run.s,t0):0;
   return `<div class="split"><div class="main-col"><header class="hd"><div><div class="lbl">${fmtDay(now)}</div>
       <div class="cap">${run?`${act(run.a).icon} ${esc(act(run.a).name)} · <span class="num" data-base="0" data-from="${run.s}" data-sec="1">${dur(now-run.s,1)}</span>`:'&nbsp;'}</div></div>
-      <button class="syncb${sync.status==='syncing'?' spin':''}${sync.status==='error'||sync.status==='offline'?' warn':''}" data-do="syncnow" aria-label="Sync now" title="${esc(syncLabel())}">
-        <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></svg></button></header>
+      <div class="hbtns"><button class="syncb${sync.status==='syncing'?' spin':''}${sync.status==='error'||sync.status==='offline'?' warn':''}" data-do="syncnow" aria-label="Sync now" title="${esc(syncLabel())}">
+        <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></svg></button>
+        <button class="syncb" data-do="settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div></header>
     <section class="grid">${tiles}<button class="tile add" data-do="newAct"><b>+</b>Activity</button></section></div>
     <aside class="tpanel"><div class="today-h"><b>Today</b><button class="linkb" data-goto="${t0}">Open in History ›</button></div>
       <div class="today-s" id="todayScroll"><div class="dv" style="--h:${H}px;grid-template-columns:46px minmax(0,1fr)">
@@ -245,8 +246,14 @@ function devicesHtml(){
   if(!sync.user)return '';
   if(!devCache){devCache='loading';Data.listDevices().then(d=>{devCache=d;if(U.view==='settings')render()}).catch(()=>{devCache=[];});}
   const list=Array.isArray(devCache)?devCache:[];
-  return `<h3 class="sh">Devices</h3><div class="card">${list.length?list.map(d=>`<div class="item static"><span class="dev"><span class="dico2">${Data.isMobileName(d.name)?'📱':'💻'}</span><span><b>${esc(d.name)}${d.me?' <em class="tag">this device</em>':''}</b><small>Last synced ${ago(d.last)}</small></span></span></div>`).join('')
+  return `<h3 class="sh">Devices</h3><div class="card">${list.length?list.map(d=>`<div class="item static"><span class="dev"><span class="dico2">${Data.isMobileName(d.name)?'📱':'💻'}</span><span><b>${esc(d.name)}${d.me?' <em class="tag">this device</em>':''}</b><small>Last synced ${ago(d.last)}</small></span></span>${d.me?'':`<button class="btn" data-rmdev="${d.id}">Remove</button>`}</div>`).join('')
     :`<div class="item static"><span><small>${devCache==='loading'?'Loading…':'No devices yet.'}</small></span></div>`}</div>`;
+}
+async function removeDevice(id){
+  const d=Array.isArray(devCache)&&devCache.find(x=>x.id===id);if(!d)return;
+  devCache=devCache.filter(x=>x.id!==id);render();
+  try{await Data.removeDevice(id)}catch(e){devCache=null;render();return toast('Could not remove device: '+e.message)}
+  toast(`${d.name} removed`,async()=>{await Data.restoreDevice(d).catch(()=>{});devCache=null;render()});
 }
 function vSettings(){
   const hidden=S.acts.filter(a=>a.hidden);
@@ -262,7 +269,7 @@ function vSettings(){
   else syncCard=`<div class="card"><div class="item static"><span><b>${esc(sync.user.email)}</b><small>${esc(syncLabel())}${sync.pending?` · ${plural(sync.pending,'change','changes')} waiting to upload`:''}</small></span><button class="btn" data-do="syncnow">Sync</button></div>
       <button class="item" data-do="signout"><span><b class="danger">Sign out</b><small>Removes data from this device; your data on the server stays safe</small></span></button></div>`;
   const lb=U.lastBackup;
-  return `<h1 class="pt">Settings</h1>
+  return `<button class="back" data-do="closeSettings">‹ Timer</button><h1 class="pt">Settings</h1>
     <h3 class="sh">Sync</h3>${syncCard}
     ${devicesHtml()}
     <h3 class="sh">Data</h3>
@@ -274,7 +281,7 @@ function vSettings(){
     </div>
     ${(!lb||Date.now()-lb>30*DAY)&&S.entries.length?`<p class="fn warn-t">Back up once a month and keep the file in Google Drive.</p>`:''}
     ${hidden.length?`<h3 class="sh">Deleted activities</h3><div class="card">${hidden.map(a=>`<div class="item static"><span><b>${a.icon} ${esc(a.name)}</b></span><button class="btn" data-restore="${a.id}">Restore</button></div>`).join('')}</div>`:''}
-    <p class="fn ver">Waktu · version 1.1</p>`;
+    <p class="fn ver">Waktu · version 1.2</p>`;
 }
 const fmtDT=t=>{const d=new Date(t);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 function exportText(kind){
@@ -515,7 +522,7 @@ app.addEventListener('pointerup',()=>endPress(false));
 app.addEventListener('pointercancel',()=>endPress(true));
 app.addEventListener('contextmenu',e=>{if(e.target.closest('.tile'))e.preventDefault()});
 app.addEventListener('click',e=>{
-  const el=e.target.closest('[data-act],[data-do],[data-day],[data-entry],[data-period],[data-pnav],[data-lane],[data-hmode],[data-goday],[data-detail],[data-goto],[data-restore]');if(!el)return;
+  const el=e.target.closest('[data-act],[data-do],[data-day],[data-entry],[data-period],[data-pnav],[data-lane],[data-hmode],[data-goday],[data-detail],[data-goto],[data-restore],[data-rmdev]');if(!el)return;
   const d=el.dataset;
   if(d.act){if(e.detail===0)tap(d.act);return}           // keyboard Enter/Space
   if(d.do==='newAct')return editAct(null);
@@ -530,6 +537,9 @@ app.addEventListener('click',e=>{
   if(d.do==='json')return download('json');
   if(d.do==='signin'||d.do==='signup'||d.do==='reset'){e.preventDefault();return auth(d.do,el)}
   if(d.do==='signout')return confirmSignOut();
+  if(d.do==='settings'){U.view='settings';U.detail=null;devCache=null;render();return scrollTo(0,0)}
+  if(d.do==='closeSettings'){U.view='timer';render();return scrollTo(0,0)}
+  if(d.rmdev)return removeDevice(d.rmdev);
   if(d.restore){act(d.restore).hidden=false;commit();return toast('Activity restored')}
   if(d.do==='cal')return openCal();
   if(d.do==='rpick'){
