@@ -222,10 +222,21 @@ function vReport(){
   const max=Math.max(...cols.map(c=>c.t),1);
   const colHtml=cols.map(c=>`<div class="col${now>=c.a&&now<c.b&&U.period!=='year'?' today':''}" title="${dur(c.t)}">${order.filter(k=>c.m[k]).map(k=>`<i style="--c:${act(k).color};height:${c.m[k]/max*100}%"></i>`).join('')}</div>`).join('');
   // waktu tidak tercatat = waktu yang sudah lewat di periode ini dikurangi yang tercatat
-  const elapsed=Math.max(0,Math.min(e,now)-s),untracked=Math.max(0,elapsed-total),base=Math.max(elapsed,total,1);
+  // waktu yang benar-benar tercatat (tanpa menghitung dua kali catatan yang bertumpuk)
+  const covered=(a,b)=>{let sum=0,end=-Infinity;
+    es.map(x=>[Math.max(x.s,a),Math.min(x.e??now,b)]).filter(([p,q])=>q>p).sort((p,q)=>p[0]-q[0])
+      .forEach(([p,q])=>{if(p>end){sum+=q-p;end=q}else if(q>end){sum+=q-end;end=q}});return sum};
+  const elapsed=Math.max(0,Math.min(e,now)-s),union=covered(s,e),overlap=Math.max(0,total-union);
+  const untracked=Math.max(0,elapsed-union),base=Math.max(elapsed,1);
+  // hari-hari yang punya catatan bertumpuk (> 1 menit)
+  const ovDays=[];
+  if(overlap>=60e3)for(let t=s;t<Math.min(e,now);t=addD(t,1)){const t1=addD(t,1),tot=es.reduce((q,x)=>q+ov(x,t,t1),0);if(tot-covered(t,t1)>=60e3)ovDays.push([t,tot-covered(t,t1)])}
   const top=Math.max(per[order[0]]||0,untracked,1),pct=v=>Math.round(v/base*100);
   const bars=order.map(k=>{const a=act(k);return `<button class="brow" data-detail="${k}" style="--c:${a.color}"><div class="bh"><span>${a.icon} ${esc(a.name)}</span><span class="num">${dur(per[k])}<small>${pct(per[k])}%</small></span></div><div class="bar"><i style="width:${per[k]/top*100}%"></i></div></button>`}).join('')
-    +`<div class="untr"><div class="bh"><span>Untracked</span><span class="num">${dur(untracked)}<small>${pct(untracked)}%</small></span></div><div class="bar"><i style="width:${untracked/top*100}%"></i></div></div>`;
+    +`<div class="untr"><div class="bh"><span>Untracked</span><span class="num">${dur(untracked)}<small>${pct(untracked)}%</small></span></div><div class="bar"><i style="width:${untracked/top*100}%"></i></div></div>`
+    +`<div class="totr${overlap>=60e3?' bad':''}"><div class="bh"><span>Total</span><span class="num"><b>${dur(total+untracked)}</b><small>of ${dur(elapsed)}${e>now?' so far':''}</small></span></div>
+      ${overlap>=60e3?`<p class="ovl">${dur(overlap)} counted twice: some entries run at the same time.${ovDays.length?` Tap a day to fix it:`:''}</p>
+        ${ovDays.length?`<div class="ovd">${ovDays.slice(0,31).map(([t,v])=>`<button data-goto="${t}">${fmtShort(t)} <small class="num">+${dur(v)}</small></button>`).join('')}${ovDays.length>31?`<span>+${ovDays.length-31} more</span>`:''}</div>`:''}`:''}</div>`;
   return `${repHead(label,e,now)}
     ${total?`<div class="chart"><div class="cols">${colHtml}</div><div class="axl">${bk.map(b=>`<span>${b[2]}</span>`).join('')}</div></div><div class="bars">${bars}</div>`
       :`<div class="empty">No data in this period yet.</div>`}`;

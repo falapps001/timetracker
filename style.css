@@ -287,3 +287,14 @@ nav button:focus-visible{outline:2px solid var(--fg);border-radius:8px}
 .zoomb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
 .zoomb b{font-size:13px;font-weight:600}
 .zoomb.on{color:var(--fg);border-color:var(--muted)}
+
+/* total di Report */
+.totr{border-top:1px solid var(--line);padding-top:12px}
+.totr .bh{margin:0}
+.totr .bh b{font-size:16px}
+.totr.bad .bh b{color:#e5484d}
+.ovl{color:#e5484d;font-size:13px;margin:8px 0 0}
+.ovd{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ovd button{border:1px solid color-mix(in srgb,#e5484d 50%,var(--line));background:transparent;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--fg)}
+.ovd small{color:#e5484d}
+.ovd span{color:var(--muted);font-size:13px;align-self:center}
