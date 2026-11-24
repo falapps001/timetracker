@@ -120,39 +120,59 @@ function scrollDay(){
   const mins=now>=s0&&now<s1?(now-sod(now))/6e4-150:!wk&&first?(Math.max(first.s,s0)-s0)/6e4:7*60;
   scrollTo(0,Math.max(0,lane.getBoundingClientRect().top+scrollY+mins*H/60-(wk?150:110)));
 }
+// daftar tahun untuk lompat cepat: dari tahun data pertama (min. 5 tahun ke belakang) sampai tahun ini
+function yearsHtml(sel){
+  const cy=new Date().getFullYear(),first=Math.min(cy-4,...S.entries.map(x=>new Date(x.s).getFullYear()));
+  const hasY=new Set(S.entries.map(x=>new Date(x.s).getFullYear()));
+  let out='';for(let y=cy;y>=first;y--)out+=`<button type="button" data-yy="${y}" class="${hasY.has(y)?'has':''}${y===sel?' sel':''}${y===cy?' td':''}">${y}</button>`;
+  return `<div class="calhd"><span class="ib-sp"></span><h2>Pick a year</h2><span class="ib-sp"></span></div><div class="mgrid">${out}</div>`;
+}
+function monthsHtml(y,selY,selM,attr){
+  const now=new Date(),has=new Set(S.entries.map(x=>{const d=new Date(x.s);return d.getFullYear()*12+d.getMonth()}));
+  return `<div class="calhd"><button type="button" class="ib" data-y="-1" aria-label="Previous year">‹</button>
+      <button type="button" class="cal-title" data-view="years" aria-label="Pick a year"><h2>${y}</h2></button>
+      <button type="button" class="ib" data-y="1" aria-label="Next year" ${y>=now.getFullYear()?'disabled':''}>›</button></div>
+    <div class="mgrid">${Array.from({length:12},(_,i)=>{const k=y*12+i;
+      return `<button type="button" ${attr}="${i}" class="${has.has(k)?'has':''}${y===selY&&i===selM?' sel':''}${y===now.getFullYear()&&i===now.getMonth()?' td':''}" ${k>now.getFullYear()*12+now.getMonth()?'disabled':''}>${new Date(y,i,1).toLocaleDateString('en-GB',{month:'long'})}</button>`}).join('')}</div>`;
+}
+// Kalender: ketuk judul bulan -> pilih bulan, ketuk tahun -> pilih tahun (tidak perlu ‹ › berkali-kali)
 function openCal(cur=U.day,isSel=t=>U.hmode==='week'?weekStart(t)===weekStart(U.day):t===U.day,onPick=t=>{U.day=t;render();scrollDay()}){
-  const m=new Date(cur);m.setDate(1);
+  const m=new Date(cur);m.setDate(1);let view='days';
   const has=new Set(S.entries.map(x=>sod(x.s)));
   const draw=form=>{
     const y=m.getFullYear(),mo=m.getMonth(),first=+new Date(y,mo,1),n=new Date(y,mo+1,0).getDate(),lead=(new Date(first).getDay()+6)%7,today=sod(Date.now());
+    if(view==='years'){form.innerHTML=yearsHtml(y);return}
+    if(view==='months'){form.innerHTML=monthsHtml(y,new Date(cur).getFullYear(),new Date(cur).getMonth(),'data-mm');return}
     let cells='';for(let i=0;i<lead;i++)cells+='<span></span>';
     for(let d=1;d<=n;d++){const t=+new Date(y,mo,d);
       cells+=`<button type="button" data-pick="${t}" class="${has.has(t)?'has':''}${t===today?' td':''}${isSel(t)?' sel':''}" ${t>today?'disabled':''}>${d}</button>`}
     form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-m="-1" aria-label="Previous month">‹</button>
-        <h2>${m.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2>
+        <button type="button" class="cal-title" data-view="months" aria-label="Pick a month"><h2>${m.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2></button>
         <button type="button" class="ib" data-m="1" aria-label="Next month" ${first+31*DAY>today&&new Date(y,mo+1,1)>today?'disabled':''}>›</button></div>
       <div class="cal${(cells.match(/ sel/g)||[]).length>1?' wkm':''}">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<span class="wd">${w}</span>`).join('')}${cells}</div>
       <div class="btns"><button type="button" class="ghost" data-pick="${today}">Today</button></div>`;
   };
   sheet('',form=>{draw(form);form.addEventListener('click',e=>{
-    const b=e.target.closest('[data-m],[data-pick]');if(!b)return;
-    if(b.dataset.m){m.setMonth(m.getMonth()+ +b.dataset.m);return draw(form)}
-    closeSheet();onPick(+b.dataset.pick);
+    const b=e.target.closest('[data-m],[data-pick],[data-view],[data-y],[data-mm],[data-yy]');if(!b||b.disabled)return;
+    const d=b.dataset;
+    if(d.view){view=d.view;return draw(form)}
+    if(d.m){m.setMonth(m.getMonth()+ +d.m);return draw(form)}
+    if(d.y){m.setFullYear(m.getFullYear()+ +d.y);return draw(form)}
+    if(d.yy){m.setFullYear(+d.yy);view='months';return draw(form)}
+    if(d.mm){m.setMonth(+d.mm);view='days';return draw(form)}
+    closeSheet();onPick(+d.pick);
   })});
 }
-// pemilih bulan (Jan–Des) dan tahun untuk Laporan
+// pemilih bulan (Jan–Des) untuk Report; ketuk tahunnya untuk lompat ke tahun lain
 function openMonthPick(){
-  const cur=new Date(U.anchor),now=new Date();let y=cur.getFullYear();
-  const has=new Set(S.entries.map(x=>{const d=new Date(x.s);return d.getFullYear()*12+d.getMonth()}));
+  const cur=new Date(U.anchor);let y=cur.getFullYear(),view='months';
   const draw=form=>{
-    form.innerHTML=`<div class="calhd"><button type="button" class="ib" data-y="-1" aria-label="Previous year">‹</button><h2>${y}</h2>
-        <button type="button" class="ib" data-y="1" aria-label="Next year" ${y>=now.getFullYear()?'disabled':''}>›</button></div>
-      <div class="mgrid">${Array.from({length:12},(_,i)=>{const k=y*12+i;
-        return `<button type="button" data-mp="${i}" class="${has.has(k)?'has':''}${y===cur.getFullYear()&&i===cur.getMonth()?' sel':''}${y===now.getFullYear()&&i===now.getMonth()?' td':''}" ${k>now.getFullYear()*12+now.getMonth()?'disabled':''}>${new Date(y,i,1).toLocaleDateString('en-GB',{month:'long'})}</button>`}).join('')}</div>
-      <div class="btns"><button type="button" class="ghost" data-mp="now">This month</button></div>`;
+    form.innerHTML=view==='years'?yearsHtml(y):monthsHtml(y,cur.getFullYear(),cur.getMonth(),'data-mp')+`<div class="btns"><button type="button" class="ghost" data-mp="now">This month</button></div>`;
   };
   sheet('',form=>{draw(form);form.addEventListener('click',e=>{
-    const b=e.target.closest('[data-y],[data-mp]');if(!b)return;
+    const b=e.target.closest('[data-y],[data-mp],[data-view],[data-yy]');if(!b||b.disabled)return;
+    if(b.dataset.view){view=b.dataset.view;return draw(form)}
+    if(b.dataset.yy){y=+b.dataset.yy;view='months';return draw(form)}
     if(b.dataset.y){y+=+b.dataset.y;return draw(form)}
     U.anchor=b.dataset.mp==='now'?Date.now():+new Date(y,+b.dataset.mp,1);closeSheet();render();
   })});
