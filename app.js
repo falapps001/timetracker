@@ -20,7 +20,7 @@ const plural=(n,one,many)=>`${n} ${n===1?one:many}`;
 const fmtShort=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 
 /* ---------- data (lihat data.js) ---------- */
-const U={hmode:(()=>{try{return localStorage.getItem(KEY+'-mode')||'day'}catch{return 'day'}})(),view:'timer',day:sod(Date.now()),period:'week',anchor:Date.now()};
+const U={zoom:(()=>{try{return +localStorage.getItem(KEY+'-zoom')||1}catch{return 1}})(),hmode:(()=>{try{return localStorage.getItem(KEY+'-mode')||'day'}catch{return 'day'}})(),view:'timer',day:sod(Date.now()),period:'week',anchor:Date.now()};
 const acts=()=>S.acts.filter(a=>!a.hidden);
 const act=id=>S.acts.find(a=>a.id===id)||{name:'?',icon:'·',color:'#888'};
 const runs=()=>S.entries.filter(x=>x.e==null).sort((p,q)=>q.s-p.s);
@@ -74,7 +74,7 @@ function vTimer(){
       <div class="hours num">${Array.from({length:23},(_,i)=>`<span style="top:${(i+1)*H}px">${pad(i+1)}:00</span>`).join('')}</div>${laneHtml(t0,false)}</div></div></aside></div>`;
 }
 
-const H=56; // tinggi 1 jam (px)
+const H0=56; let H=H0; // tinggi 1 jam (px); di History dikali tingkat zoom
 const weekStart=t=>{const d=new Date(t);return addD(sod(t),-((d.getDay()+6)%7))};
 function laneHtml(d0,wk){
   const d1=addD(d0,1),now=Date.now(),px=t=>(t-d0)/6e4*H/60;
@@ -104,7 +104,8 @@ function vHistory(){
   const wkhd=wk?`<div class="wkhd" style="grid-template-columns:${cols}"><span></span>${days.map(d=>{const x=new Date(d);
     return `<button type="button" data-goday="${d}" class="${d===today?'td':''}"><small>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.getDay()]}</small><b class="num">${x.getDate()}</b></button>`}).join('')}</div>`:'';
   return `<div class="stick">
-      <div class="seg">${[['day','Daily'],['week','Weekly']].map(([k,l])=>`<button data-hmode="${k}" class="${(U.hmode||'day')===k?'on':''}">${l}</button>`).join('')}</div>
+      <div class="hrow"><div class="seg">${[['day','Daily'],['week','Weekly']].map(([k,l])=>`<button data-hmode="${k}" class="${(U.hmode||'day')===k?'on':''}">${l}</button>`).join('')}</div>
+        <button class="ib zoomb${U.zoom>1?' on':''}" data-do="zoom" aria-label="Zoom (${U.zoom}×)" title="Zoom"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg><b class="num">${U.zoom}×</b></button></div>
       <div class="daynav"><button class="ib" data-day="-1" aria-label="Previous">‹</button>
       <button class="dtitle" data-do="cal" aria-label="Pick a date"><b>${title}</b></button>
       <button class="ib" data-day="1" aria-label="Next" ${s1>today?'disabled':''}>›</button></div>${wkhd}</div>
@@ -281,7 +282,7 @@ function vSettings(){
     </div>
     ${(!lb||Date.now()-lb>30*DAY)&&S.entries.length?`<p class="fn warn-t">Back up once a month and keep the file in Google Drive.</p>`:''}
     ${hidden.length?`<h3 class="sh">Deleted activities</h3><div class="card">${hidden.map(a=>`<div class="item static"><span><b>${a.icon} ${esc(a.name)}</b></span><button class="btn" data-restore="${a.id}">Restore</button></div>`).join('')}</div>`:''}
-    <p class="fn ver">Waktu · version 1.2</p>`;
+    <p class="fn ver">Waktu · version 1.3</p>`;
 }
 const fmtDT=t=>{const d=new Date(t);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 function exportText(kind){
@@ -327,6 +328,7 @@ function render(){
   const ts=$('#todayScroll'),keep=ts?ts.scrollTop:null;
   const vals={};document.querySelectorAll('#app input[id]').forEach(i=>{if(i.type!=='file')vals[i.id]=i.value});
   const focus=document.activeElement?.id;
+  H=U.view==='history'?H0*U.zoom:H0;
   $('#app').innerHTML=({timer:vTimer,history:vHistory,report:vReport,settings:vSettings})[U.view]();
   const nt=$('#todayScroll');
   if(nt)nt.scrollTop=keep??Math.max(0,((Date.now()-sod(Date.now()))/6e4-150)*H/60);
@@ -541,6 +543,14 @@ app.addEventListener('click',e=>{
   if(d.do==='closeSettings'){U.view='timer';render();return scrollTo(0,0)}
   if(d.rmdev)return removeDevice(d.rmdev);
   if(d.restore){act(d.restore).hidden=false;commit();return toast('Activity restored')}
+  if(d.do==='zoom'){
+    // jam yang sedang terlihat di tengah layar tetap di tengah setelah zoom
+    const lane=$('.lane'),top=lane?lane.getBoundingClientRect().top+scrollY:0,mid=(scrollY+innerHeight/2-top)/H;
+    U.zoom={1:2,2:4,4:8,8:1}[U.zoom]||1;try{localStorage.setItem(KEY+'-zoom',U.zoom)}catch{}
+    render();
+    const l2=$('.lane');if(l2)scrollTo(0,Math.max(0,l2.getBoundingClientRect().top+scrollY+mid*H-innerHeight/2));
+    return;
+  }
   if(d.do==='cal')return openCal();
   if(d.do==='rpick'){
     if(U.period==='day')return openCal(U.anchor,t=>t===sod(U.anchor),t=>{U.anchor=t;render()});
@@ -552,7 +562,7 @@ app.addEventListener('click',e=>{
   if(d.goto){U.view='history';U.hmode='day';U.day=+d.goto;render();return scrollDay()}
   if(d.lane!==undefined){
     if(!acts().length)return toast('Add an activity first on the Timer page');
-    const mins=Math.floor((e.clientY-el.getBoundingClientRect().top)/H*60/15)*15,s=+d.lane+mins*6e4,now=Date.now();
+    const snap=U.zoom>=4?5:15,mins=Math.floor((e.clientY-el.getBoundingClientRect().top)/H*60/snap)*snap,s=+d.lane+mins*6e4,now=Date.now();
     if(s>=now)return toast('That time is in the future');
     return editEntry(null,{s,e:Math.min(s+36e5,now)});
   }
